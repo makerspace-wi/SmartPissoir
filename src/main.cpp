@@ -18,8 +18,6 @@
 
 // Pin-Definitionen für ESP8266
 #define SOLENOID_PIN 12     // D6: MOSFET-Gate für Magnetventil
-#define SENSOR_INTERRUPT 14 // D5: Verbunden mit GPIO1 des VL53L0X
-#define SENSOR_XSHUT 13     // D7: Zum Reset/Ausschalten des Sensors
 
 VL53L0X sensor;
 WiFiClient espClient;
@@ -52,9 +50,6 @@ void serviceOta();
   char mqttBroker[40] = "192.168.0.5";
   uint16_t mqttPort = 1883;
   const char MQTT_CLIENT_ID[] = "smartpissoir-esp8266";
-  const char MQTT_TOPIC_ACTIVATION[] = "smartpissoir/config/activationThresh";
-  const char MQTT_TOPIC_PRESENCE[] = "smartpissoir/config/minPresenceTime";
-  const char MQTT_TOPIC_FLUSH[] = "smartpissoir/config/flushDuration";
   const char MQTT_TOPIC_STATE[] = "smartpissoir/config/state";
   const char MQTT_SET_TOPIC_ACTIVATION[] = "smartpissoir/config/set/activationThresh";
   const char MQTT_SET_TOPIC_PRESENCE[] = "smartpissoir/config/set/minPresenceTime";

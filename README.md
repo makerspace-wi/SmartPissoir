@@ -13,7 +13,7 @@ Das System erkennt Anwesenheit, wartet auf das Verlassen des Bereichs und starte
 - Status-LED während der Spülung
 - WLAN-Setup über WiFiManager (Captive Portal)
 - MQTT-Anbindung mit Reconnect
-- Konfigurationswerte werden per MQTT publiziert und sind per MQTT zur Laufzeit änderbar
+- Konfigurationszustand wird als MQTT State publiziert und ist per MQTT zur Laufzeit änderbar
 - Elegant OTA Web-Update über Browser
 
 ## Projektstruktur
@@ -89,9 +89,6 @@ Damit kannst du neue Firmware direkt im Browser hochladen.
 
 Status/State (retained):
 
-- smartpissoir/config/activationThresh
-- smartpissoir/config/minPresenceTime
-- smartpissoir/config/flushDuration
 - smartpissoir/config/state
 - smartpissoir/status/online (LWT: "online" bei Verbindung, "offline" bei Trennung)
 
@@ -119,13 +116,13 @@ Diese drei Werte werden nach MQTT-Änderungen auf LittleFS gespeichert und nach 
 
 Beispiel:
 
-Wenn auf smartpissoir/config/set/flushDuration der Wert 7000 publiziert wird, setzt das Gerät die Spüldauer auf 7000 ms und publiziert den neuen Wert wieder auf smartpissoir/config/flushDuration.
+Wenn auf smartpissoir/config/set/flushDuration der Wert 7000 publiziert wird, setzt das Gerät die Spüldauer auf 7000 ms und publiziert den neuen Zustand auf smartpissoir/config/state.
 
 Wenn auf smartpissoir/command/flush eine Nachricht gesendet wird, startet sofort eine Spülung.
 
 Das Topic smartpissoir/config/state enthält den kompletten aktuellen Zustand als JSON, zum Beispiel:
 
-{ "activationThresh": 300, "minPresenceTime": 5000, "flushDuration": 10000, "mqttBroker": "192.168.0.5", "mqttPort": 1883 }
+{ "activationThresh": 300, "minPresenceTime": 5000, "flushDuration": 10000, "mqttBroker": "192.168.0.5", "mqttPort": 1883, "ip": "192.168.0.42" }
 
 ## Ablauf
 
