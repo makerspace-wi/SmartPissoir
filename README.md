@@ -1,3 +1,5 @@
+<img width="400" alt="IMG_6802" src="https://github.com/user-attachments/assets/0aaeb4b7-9a7e-42e6-9aa3-eeab565c8217" />
+
 # SmartPissoir
 
 Automatische Spülsteuerung auf ESP8266 mit VL53L0X-Abstandssensor.
