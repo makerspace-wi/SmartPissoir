@@ -9,7 +9,7 @@ Das System erkennt Anwesenheit, wartet auf das Verlassen des Bereichs und starte
 
 - Abstandsmessung mit VL53L0X (I2C)
 - Mindest-Anwesenheitszeit zur Verifikation
-- Spülung über Ausgangspin (MOSFET)
+- Spülung über Ausgangspin (N-Channel MOSFET BSS138K)
 - Status-LED während der Spülung
 - WLAN-Setup über WiFiManager (Captive Portal)
 - MQTT-Anbindung mit Reconnect
