@@ -153,4 +153,4 @@ In platformio.ini:
 - Unerwartetes Schaltverhalten:
   LED-Logik auf invertierte LED_BUILTIN-Prinzipien des Boards prüfen.
   
-<img width="958" height="970" alt="IMG_6799 2" src="https://github.com/user-attachments/assets/e53c3068-c3d8-4a6e-9d7a-cf4aae7b5b8f" />
+<img width="400" alt="IMG_6799 2" src="https://github.com/user-attachments/assets/e53c3068-c3d8-4a6e-9d7a-cf4aae7b5b8f" />
