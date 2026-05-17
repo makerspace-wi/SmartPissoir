@@ -7,7 +7,7 @@ Das System erkennt Anwesenheit, wartet auf das Verlassen des Bereichs und starte
 
 - Abstandsmessung mit VL53L0X (I2C)
 - Mindest-Anwesenheitszeit zur Verifikation
-- Spülung über Ausgangspin (z. B. MOSFET/Relais)
+- Spülung über Ausgangspin (MOSFET)
 - Status-LED während der Spülung
 - WLAN-Setup über WiFiManager (Captive Portal)
 - MQTT-Anbindung mit Reconnect
@@ -24,10 +24,8 @@ Das System erkennt Anwesenheit, wartet auf das Verlassen des Bereichs und starte
 
 Aktuelle Pinbelegung in src/main.cpp:
 
-- SOLENOID_PIN = 2
-- LED_PIN = LED_BUILTIN
-- SENSOR_INTERRUPT = 14 (derzeit nicht aktiv genutzt)
-- SENSOR_XSHUT = 13 (derzeit nicht aktiv genutzt)
+- SOLENOID_PIN = GPIO12
+- LED_PIN = LED_BUILTIN (GPIO2)
 
 Hinweis:
 Auf ESP8266-Boards kann LED_BUILTIN invertiert sein (LOW = an, HIGH = aus).
@@ -37,7 +35,7 @@ Auf ESP8266-Boards kann LED_BUILTIN invertiert sein (LOW = an, HIGH = aus).
 - SDA -> D2 (GPIO4)
 - SCL -> D1 (GPIO5)
 - GND -> GND
-- VCC -> 3.3V oder 5V (abh. vom Modul)
+- VCC -> 3.3V
 
 ## Build, Upload, Monitor
 
