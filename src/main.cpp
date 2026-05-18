@@ -30,6 +30,7 @@ void setupWifi();
 void ensureMqttConnection();
 void onMqttMessage(char* topic, byte* payload, unsigned int length);
 bool parsePositiveInt(const byte* payload, unsigned int length, int& valueOut);
+bool parseEnableValue(const byte* payload, unsigned int length, bool& enabledOut);
 void onWifiManagerSaveConfig();
 void loadRuntimeConfig();
 void saveRuntimeConfig();
@@ -54,12 +55,15 @@ void serviceOta();
   const char MQTT_SET_TOPIC_ACTIVATION[] = "smartpissoir/config/set/activationThresh";
   const char MQTT_SET_TOPIC_PRESENCE[] = "smartpissoir/config/set/minPresenceTime";
   const char MQTT_SET_TOPIC_FLUSH[] = "smartpissoir/config/set/flushDuration";
+  const char MQTT_SET_TOPIC_ENABLED[] = "smartpissoir/config/set/enabled";
   const char MQTT_COMMAND_TOPIC_FLUSH[] = "smartpissoir/command/flush";
   const char MQTT_TOPIC_LWT[] = "smartpissoir/status/online";
+  const char MQTT_TOPIC_ENABLED_STATUS[] = "smartpissoir/status/enabled";
 
   unsigned long lastMqttReconnectAttempt = 0;
   bool shouldSaveMqttConfig = false;
   bool remoteFlushRequested = false;
+  bool systemEnabled = true;
 
     void setup()
     {
@@ -197,7 +201,9 @@ void ensureMqttConnection()
     mqttClient.subscribe(MQTT_SET_TOPIC_ACTIVATION);
     mqttClient.subscribe(MQTT_SET_TOPIC_PRESENCE);
     mqttClient.subscribe(MQTT_SET_TOPIC_FLUSH);
+    mqttClient.subscribe(MQTT_SET_TOPIC_ENABLED);
     mqttClient.subscribe(MQTT_COMMAND_TOPIC_FLUSH);
+    mqttClient.publish(MQTT_TOPIC_ENABLED_STATUS, systemEnabled ? "enabled" : "disabled", true);
   }
   else
   {
@@ -230,6 +236,8 @@ void loadRuntimeConfig()
   presence.trim();
   String flush = f.readStringUntil('\n');
   flush.trim();
+  String enabled = f.readStringUntil('\n');
+  enabled.trim();
   f.close();
 
   int parsedActivation = activation.toInt();
@@ -248,6 +256,14 @@ void loadRuntimeConfig()
   {
     flushDuration = parsedFlush;
   }
+  if (enabled.equalsIgnoreCase("enabled") || enabled == "1" || enabled.equalsIgnoreCase("true") || enabled.equalsIgnoreCase("on"))
+  {
+    systemEnabled = true;
+  }
+  else if (enabled.equalsIgnoreCase("disabled") || enabled == "0" || enabled.equalsIgnoreCase("false") || enabled.equalsIgnoreCase("off"))
+  {
+    systemEnabled = false;
+  }
 }
 
 void saveRuntimeConfig()
@@ -262,6 +278,7 @@ void saveRuntimeConfig()
   f.println(activationThresh);
   f.println(minPresenceTime);
   f.println(flushDuration);
+  f.println(systemEnabled ? "enabled" : "disabled");
   f.close();
   Serial.println(F("Laufzeitparameter gespeichert."));
 }
@@ -324,15 +341,17 @@ void publishConfigState()
   snprintf(
     payload,
     sizeof(payload),
-    "{\"activationThresh\":%d,\"minPresenceTime\":%d,\"flushDuration\":%d,\"mqttBroker\":\"%s\",\"mqttPort\":%u,\"ip\":\"%s\"}",
+    "{\"activationThresh\":%d,\"minPresenceTime\":%d,\"flushDuration\":%d,\"enabled\":%s,\"mqttBroker\":\"%s\",\"mqttPort\":%u,\"ip\":\"%s\"}",
     activationThresh,
     minPresenceTime,
     flushDuration,
+    systemEnabled ? "true" : "false",
     mqttBroker,
     mqttPort,
     ipStr.c_str());
 
   mqttClient.publish(MQTT_TOPIC_STATE, payload, true);
+  mqttClient.publish(MQTT_TOPIC_ENABLED_STATUS, systemEnabled ? "enabled" : "disabled", true);
   Serial.println(F("MQTT Config State publiziert."));
 }
 
@@ -340,8 +359,37 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length)
 {
   if (strcmp(topic, MQTT_COMMAND_TOPIC_FLUSH) == 0)
   {
+    if (!systemEnabled)
+    {
+      Serial.println(F("MQTT Fernspuelung ignoriert (System deaktiviert)."));
+      return;
+    }
     remoteFlushRequested = true;
     Serial.println(F("MQTT Fernspuelung angefordert."));
+    return;
+  }
+
+  if (strcmp(topic, MQTT_SET_TOPIC_ENABLED) == 0)
+  {
+    bool newEnabled = true;
+    if (!parseEnableValue(payload, length, newEnabled))
+    {
+      Serial.println(F("MQTT Payload ungueltig fuer enabled (nutze enabled/disabled, on/off, true/false, 1/0)."));
+      return;
+    }
+
+    if (systemEnabled != newEnabled)
+    {
+      systemEnabled = newEnabled;
+      if (!systemEnabled)
+      {
+        remoteFlushRequested = false;
+      }
+      Serial.print(F("Systemstatus gesetzt auf: "));
+      Serial.println(systemEnabled ? F("enabled") : F("disabled"));
+      saveRuntimeConfig();
+    }
+    publishConfigState();
     return;
   }
 
@@ -420,8 +468,46 @@ bool parsePositiveInt(const byte* payload, unsigned int length, int& valueOut)
   return true;
 }
 
+bool parseEnableValue(const byte* payload, unsigned int length, bool& enabledOut)
+{
+  if (length == 0 || length > 16)
+  {
+    return false;
+  }
+
+  char buf[17];
+  for (unsigned int i = 0; i < length; i++)
+  {
+    buf[i] = static_cast<char>(payload[i]);
+  }
+  buf[length] = '\0';
+
+  String value = String(buf);
+  value.trim();
+  value.toLowerCase();
+
+  if (value == "1" || value == "true" || value == "on" || value == "enable" || value == "enabled")
+  {
+    enabledOut = true;
+    return true;
+  }
+  if (value == "0" || value == "false" || value == "off" || value == "disable" || value == "disabled")
+  {
+    enabledOut = false;
+    return true;
+  }
+
+  return false;
+}
+
 void runCycle()
 {
+  if (!systemEnabled)
+  {
+    remoteFlushRequested = false;
+    return;
+  }
+
   // PRUEFPHASE: Ist jemand da?
   unsigned long startTime = millis();
   bool userVerified = false;
@@ -475,6 +561,12 @@ void processRemoteFlushRequest()
 
 void performFlush()
 {
+  if (!systemEnabled)
+  {
+    remoteFlushRequested = false;
+    return;
+  }
+
   remoteFlushRequested = false;
 
   // SPUELPHASE: Aktion ausloesen

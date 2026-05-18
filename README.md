@@ -91,12 +91,14 @@ Status/State (retained):
 
 - smartpissoir/config/state
 - smartpissoir/status/online (LWT: "online" bei Verbindung, "offline" bei Trennung)
+- smartpissoir/status/enabled ("enabled" oder "disabled")
 
 Set-Topics (zur Laufzeit verändern):
 
 - smartpissoir/config/set/activationThresh
 - smartpissoir/config/set/minPresenceTime
 - smartpissoir/config/set/flushDuration
+- smartpissoir/config/set/enabled
 
 Command-Topics:
 
@@ -105,6 +107,7 @@ Command-Topics:
 Payload-Format für Set-Topics:
 
 - Positive Ganzzahl als Text, z. B. 300
+- Für smartpissoir/config/set/enabled: enabled/disabled, true/false, on/off, 1/0
 
 Aktuell implementierte Wertebereiche:
 
@@ -114,15 +117,29 @@ Aktuell implementierte Wertebereiche:
 
 Diese drei Werte werden nach MQTT-Änderungen auf LittleFS gespeichert und nach einem Neustart wieder geladen.
 
+Enable/Disable-Status:
+
+- Standard beim Start ist enabled
+- Der Wert wird persistent gespeichert und nach Neustart wiederhergestellt
+- Bei disabled werden Anwesenheitsauslösung und Fernspülung ignoriert
+- Jede Änderung publiziert sofort smartpissoir/status/enabled und den aktualisierten smartpissoir/config/state
+
 Beispiel:
 
 Wenn auf smartpissoir/config/set/flushDuration der Wert 7000 publiziert wird, setzt das Gerät die Spüldauer auf 7000 ms und publiziert den neuen Zustand auf smartpissoir/config/state.
 
 Wenn auf smartpissoir/command/flush eine Nachricht gesendet wird, startet sofort eine Spülung.
 
+Wenn das System disabled ist, wird smartpissoir/command/flush ignoriert.
+
 Das Topic smartpissoir/config/state enthält den kompletten aktuellen Zustand als JSON, zum Beispiel:
 
-{ "activationThresh": 300, "minPresenceTime": 5000, "flushDuration": 10000, "mqttBroker": "192.168.0.5", "mqttPort": 1883, "ip": "192.168.0.42" }
+{ "activationThresh": 300, "minPresenceTime": 5000, "flushDuration": 10000, "enabled": true, "mqttBroker": "192.168.0.5", "mqttPort": 1883, "ip": "192.168.0.42" }
+
+Beispiel zum Deaktivieren:
+
+- Topic: smartpissoir/config/set/enabled
+- Payload: disabled
 
 ## Ablauf
 
