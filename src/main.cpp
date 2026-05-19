@@ -17,7 +17,8 @@
 
 
 // Pin-Definitionen für ESP8266
-#define SOLENOID_PIN 12     // D6: MOSFET-Gate für Magnetventil
+#define L9110_IN1 12     // D6: L9110S IN1
+#define L9110_IN2 13     // D7: L9110S IN2
 
 VL53L0X sensor;
 WiFiClient espClient;
@@ -68,9 +69,11 @@ void serviceOta();
     void setup()
     {
       Serial.begin(115200);
-      pinMode(SOLENOID_PIN, OUTPUT);
+      pinMode(L9110_IN1, OUTPUT);
+      pinMode(L9110_IN2, OUTPUT);
       pinMode(LED_PIN, OUTPUT);
-      digitalWrite(SOLENOID_PIN, LOW); // Ventil zu Beginn geschlossen
+      digitalWrite(L9110_IN1, LOW);
+      digitalWrite(L9110_IN2, LOW);
       digitalWrite(LED_PIN, HIGH); // LED zu Beginn ausgeschaltet
       Wire.begin();
 
@@ -559,6 +562,24 @@ void processRemoteFlushRequest()
 {
 }
 
+void valveOpen() {
+  // 100ms Puls: Ventil öffnen
+  digitalWrite(L9110_IN1, HIGH);
+  digitalWrite(L9110_IN2, LOW);
+  delay(100);
+  digitalWrite(L9110_IN1, LOW);
+  digitalWrite(L9110_IN2, LOW);
+}
+
+void valveClose() {
+  // 100ms Puls: Ventil schließen
+  digitalWrite(L9110_IN1, LOW);
+  digitalWrite(L9110_IN2, HIGH);
+  delay(100);
+  digitalWrite(L9110_IN1, LOW);
+  digitalWrite(L9110_IN2, LOW);
+}
+
 void performFlush()
 {
   if (!systemEnabled)
@@ -571,7 +592,7 @@ void performFlush()
 
   // SPUELPHASE: Aktion ausloesen
   Serial.println(F("Spuelung startet..."));
-  digitalWrite(SOLENOID_PIN, HIGH);
+  valveOpen();
   digitalWrite(LED_PIN, LOW); // LED an waehrend Spuelung
   unsigned long flushStart = millis();
   while (millis() - flushStart < static_cast<unsigned long>(flushDuration))
@@ -580,7 +601,7 @@ void performFlush()
     serviceOta();
     delay(20);
   }
-  digitalWrite(SOLENOID_PIN, LOW);
+  valveClose();
   digitalWrite(LED_PIN, HIGH); // LED aus nach Spuelung
   Serial.println(F("Spuelung beendet."));
   Serial.println(F("Warte auf naechsten Nutzer..."));

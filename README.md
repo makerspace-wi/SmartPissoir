@@ -9,7 +9,7 @@ Das System erkennt Anwesenheit, wartet auf das Verlassen des Bereichs und starte
 
 - Abstandsmessung mit VL53L0X (I2C)
 - Mindest-Anwesenheitszeit zur Verifikation
-- Spülung über Ausgangspin (N-Channel MOSFET BSS138K)
+- Spülung über bistabiles Ventil (L9110S H-Brücke, Pulssteuerung)
 - Status-LED während der Spülung
 - WLAN-Setup über WiFiManager (Captive Portal)
 - MQTT-Anbindung mit Reconnect
@@ -22,15 +22,24 @@ Das System erkennt Anwesenheit, wartet auf das Verlassen des Bereichs und starte
 - src/main.cpp: Hauptlogik (Sensor, Ablauf, WLAN, MQTT)
 - include/, lib/, test/: Standard-Ordner von PlatformIO
 
+
 ## Hardware
 
-Aktuelle Pinbelegung in src/main.cpp:
+### Ventilsteuerung (bistabiles Ventil mit L9110S)
 
-- SOLENOID_PIN = GPIO12
+Das Ventil wird über eine L9110S H-Brücke angesteuert. Es ist bistabil und benötigt zum Öffnen und Schließen jeweils einen kurzen 5V-Puls (ca. 30 ms) in die jeweilige Richtung.
+
+**Pinbelegung (siehe src/main.cpp):**
+
+- L9110_IN1 = GPIO12 (D6)
+- L9110_IN2 = GPIO13 (D7)
 - LED_PIN = LED_BUILTIN (GPIO2)
 
-Hinweis:
-Auf ESP8266-Boards kann LED_BUILTIN invertiert sein (LOW = an, HIGH = aus).
+**Funktionsweise:**
+- Zum Öffnen: IN1 = HIGH, IN2 = LOW für 100 ms, dann beide LOW
+- Zum Schließen: IN1 = LOW, IN2 = HIGH für 100 ms, dann beide LOW
+
+Hinweis: Auf ESP8266-Boards kann LED_BUILTIN invertiert sein (LOW = an, HIGH = aus).
 
 ## Sensor-Verdrahtung (VL53L0X)
 
