@@ -8,6 +8,7 @@
 #include <LittleFS.h>
 #include <ElegantOTA.h>
 
+// Rev. 2024-06-01: Initiale Version
 // VL53L0X test via I2C (Pololu library)
 // Wiring (ESP8266):
 // TOF SDA -> D2 (GPIO4)
@@ -42,6 +43,9 @@ void performFlush();
 void publishConfigState();
 void setupOta();
 void serviceOta();
+void sendValveOffSequenceOnBoot();
+void valveOpen();
+void valveClose();
 
 // Parameter (anpassbar)
     const int LED_PIN = LED_BUILTIN;  // D4/GPIO2
@@ -74,6 +78,7 @@ void serviceOta();
       pinMode(LED_PIN, OUTPUT);
       digitalWrite(L9110_IN1, LOW);
       digitalWrite(L9110_IN2, LOW);
+      sendValveOffSequenceOnBoot();
       digitalWrite(LED_PIN, HIGH); // LED zu Beginn ausgeschaltet
       Wire.begin();
 
@@ -560,6 +565,22 @@ void runCycle()
 
 void processRemoteFlushRequest()
 {
+}
+
+void sendValveOffSequenceOnBoot()
+{
+  // Force a deterministic OFF state at boot.
+  digitalWrite(L9110_IN1, LOW);
+  digitalWrite(L9110_IN2, LOW);
+  delay(50);
+
+  valveClose();
+  delay(80);
+  valveClose();
+
+  digitalWrite(L9110_IN1, LOW);
+  digitalWrite(L9110_IN2, LOW);
+  Serial.println(F("Boot OFF-Sequenz gesendet."));
 }
 
 void valveOpen() {
