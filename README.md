@@ -10,10 +10,10 @@ Das System erkennt Anwesenheit, wartet auf das Verlassen des Bereichs und starte
 - Abstandsmessung mit VL53L0X (I2C)
 - Mindest-Anwesenheitszeit zur Verifikation
 - Spülung über bistabiles Ventil (L9110S H-Brücke, Pulssteuerung)
-- Status-LED während der Spülung
 - WLAN-Setup über WiFiManager (Captive Portal)
 - MQTT-Anbindung mit Reconnect
 - Konfigurationszustand wird als MQTT State publiziert und ist per MQTT zur Laufzeit änderbar
+- Spülstatus wird als MQTT-Status true/false publiziert
 - Elegant OTA Web-Update über Browser
 
 ## Projektstruktur
@@ -33,13 +33,10 @@ Das Ventil wird über eine L9110S H-Brücke angesteuert. Es ist bistabil und ben
 
 - L9110_IN1 = GPIO12 (D6)
 - L9110_IN2 = GPIO13 (D7)
-- LED_PIN = LED_BUILTIN (GPIO2)
 
 **Funktionsweise:**
 - Zum Öffnen: IN1 = HIGH, IN2 = LOW für 100 ms, dann beide LOW
 - Zum Schließen: IN1 = LOW, IN2 = HIGH für 100 ms, dann beide LOW
-
-Hinweis: Auf ESP8266-Boards kann LED_BUILTIN invertiert sein (LOW = an, HIGH = aus).
 
 ## Sensor-Verdrahtung (VL53L0X)
 
@@ -101,6 +98,7 @@ Status/State (retained):
 - smartpissoir/config/state
 - smartpissoir/status/online (LWT: "online" bei Verbindung, "offline" bei Trennung)
 - smartpissoir/status/enabled ("enabled" oder "disabled")
+- smartpissoir/status/flushing ("true" während der Spülung, sonst "false")
 
 Set-Topics (zur Laufzeit verändern):
 
@@ -141,6 +139,8 @@ Wenn auf smartpissoir/command/flush eine Nachricht gesendet wird, startet sofort
 
 Wenn das System disabled ist, wird smartpissoir/command/flush ignoriert.
 
+Während einer aktiven Spülung publiziert das Gerät smartpissoir/status/flushing mit dem Wert true und danach wieder false.
+
 Das Topic smartpissoir/config/state enthält den kompletten aktuellen Zustand als JSON, zum Beispiel:
 
 { "activationThresh": 300, "minPresenceTime": 5000, "flushDuration": 10000, "enabled": true, "mqttBroker": "192.168.0.5", "mqttPort": 1883, "ip": "192.168.0.42" }
@@ -176,6 +176,6 @@ In platformio.ini:
 - Keine Distanzwerte:
   I2C-Verdrahtung und Sensorversorgung prüfen.
 - Unerwartetes Schaltverhalten:
-  LED-Logik auf invertierte LED_BUILTIN-Prinzipien des Boards prüfen.
+  Verdrahtung von Ventil, L9110S und Versorgungsspannung prüfen.
   
 <img width="400" alt="IMG_6799 2" src="https://github.com/user-attachments/assets/e53c3068-c3d8-4a6e-9d7a-cf4aae7b5b8f" />

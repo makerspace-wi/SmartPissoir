@@ -48,7 +48,6 @@ void valveOpen();
 void valveClose();
 
 // Parameter (anpassbar)
-    const int LED_PIN = LED_BUILTIN;  // D4/GPIO2
     int activationThresh = 300; // x mm Aktivierungsabstand [2]
     int minPresenceTime = 5000; // 5 Sek. Mindestanwesenheit [1]
     int flushDuration = 10000;  // 10 Sek. Spüldauer [3]
@@ -64,6 +63,7 @@ void valveClose();
   const char MQTT_COMMAND_TOPIC_FLUSH[] = "smartpissoir/command/flush";
   const char MQTT_TOPIC_LWT[] = "smartpissoir/status/online";
   const char MQTT_TOPIC_ENABLED_STATUS[] = "smartpissoir/status/enabled";
+  const char MQTT_TOPIC_FLUSHING[] = "smartpissoir/status/flushing";
 
   unsigned long lastMqttReconnectAttempt = 0;
   bool shouldSaveMqttConfig = false;
@@ -75,11 +75,9 @@ void valveClose();
       Serial.begin(115200);
       pinMode(L9110_IN1, OUTPUT);
       pinMode(L9110_IN2, OUTPUT);
-      pinMode(LED_PIN, OUTPUT);
       digitalWrite(L9110_IN1, LOW);
       digitalWrite(L9110_IN2, LOW);
       sendValveOffSequenceOnBoot();
-      digitalWrite(LED_PIN, HIGH); // LED zu Beginn ausgeschaltet
       Wire.begin();
 
       // Sensor initialisieren
@@ -613,8 +611,8 @@ void performFlush()
 
   // SPUELPHASE: Aktion ausloesen
   Serial.println(F("Spuelung startet..."));
+  mqttClient.publish(MQTT_TOPIC_FLUSHING, "true", true);
   valveOpen();
-  digitalWrite(LED_PIN, LOW); // LED an waehrend Spuelung
   unsigned long flushStart = millis();
   while (millis() - flushStart < static_cast<unsigned long>(flushDuration))
   {
@@ -623,7 +621,7 @@ void performFlush()
     delay(20);
   }
   valveClose();
-  digitalWrite(LED_PIN, HIGH); // LED aus nach Spuelung
+  mqttClient.publish(MQTT_TOPIC_FLUSHING, "false", true);
   Serial.println(F("Spuelung beendet."));
   Serial.println(F("Warte auf naechsten Nutzer..."));
 }
