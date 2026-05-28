@@ -4,5 +4,4 @@
 .vscode/launch.json
 .vscode/ipch
 .DS_Store
-.firmware_archive
 firmware_archive/
