@@ -20,7 +20,7 @@ def archive_firmware(source, target, env):
     files = sorted(
         [f for f in os.listdir(archive_dir) if f.endswith(".bin")],
     )
-    while len(files) > 3:
+    while len(files) > 5:
         oldest = os.path.join(archive_dir, files.pop(0))
         os.remove(oldest)
         print(f"Alte Firmware gelöscht: {oldest}")
